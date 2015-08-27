@@ -33,5 +33,3 @@ A framework for easily creating beautiful presentations using HTML. [Check out t
 ## License
 
 MIT licensed
-
-Copyright (C) 2015 Hakim El Hattab, http://hakim.se
