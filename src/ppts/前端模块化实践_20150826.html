@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>前端模块化实践</title>
+
+		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Hakim El Hattab">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="../css/reveal.css">
+		<link rel="stylesheet" href="../css/theme/league.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../lib/css/zenburn.css">
+		<!-- layout -->
+		<link rel="stylesheet" href="../css/layout.css">
+		<link rel="stylesheet" href="../css/custom.css">	
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../css/print/pdf.css' : '../css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section data-markdown>
+					<script type="text/template">
+				        ## 前端模块化实践
+				        ### 陈建 @dreamstu
+				        _http://www.chenjian.xyz_
+				    </script>
+				</section>
+
+				<section>
+					<h2 class="l">大纲</h2>
+					<div class="cl tl">
+						<p>一、前端模块化简史</p>
+						<p>二、关于Sea.js</p>
+						<p>三、CRM最佳实践</p>	
+					</div>
+					<aside class="notes">
+						主要三大块内容
+					</aside>
+				</section>
+
+				<!-- Example of nested vertical slides -->
+				<section data-background-transition="zoom">
+
+					<section data-background="../img/1.1.png">
+						<h2 class="bottom black">一、前端模块化简史</h2>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 模块系统的基本问题
+
+							- 模块是什么?
+							- 模块之间如何交互?
+
+							<aside class="notes">
+								说起模块，不同的理解，究竟什么是一个模块，不同的人有不同的答案。
+								一个js文件？
+								一个代码片段？
+								到底是什么？
+								基本问题？
+								如果你想做一个模块系统，必须回答这个问题。
+								一个系统-->多个成员-->相互协作-->完成任务-->成为一个系统
+								要相互协作，成员如何通信，这是一个基本问题。
+								so：
+								对于模块系统，我们需要回答两个问题：
+								1.模块是什么
+								2.之间如何交互，通信。
+
+								next 在前端的角度，在前端发展的不同阶段，答案是什么？
+							</aside>
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 命名空间时代
+
+							```
+							var org = {};
+
+							org.Crm = {};
+
+							org.Crm.Utils = {};
+
+							org.Crm.Utils.each = function(arr){
+								// 实现代码
+							};
+
+							org.Crm.Utils.log = function(str){
+								// 实现代码
+							};
+
+							```
+							<aside class="notes">
+							看一段代码，很早以前就使用这样的代码。js中没有命名空间。
+							通过对象的方式，模拟命名空间，只简单的组织方式，模块就是一个obj，eg：utils模块-->obj 提供了each，log方法。这是一个模块
+							模块之间如何交互。直接通过命名空间引用。
+							非常简单，有效。
+
+							问题：
+							1.记忆成分。（记住，查文档，恼火）
+							2.依赖问题。（人肉）
+
+							总结：
+							命名空间 伟大发明，但随着前端开发越来越复杂，会存在一些问题。
+
+							</aside>
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+					        ## 向 YUI 致敬
+
+					        ```
+					        YUI.add(['my-module'],function(Y){
+					        	// ...
+					        },'0.0.1',{
+					        	requires:['node','event']
+					        });
+
+					        YUI().use("io-base","module-a","module-b",function(Y){
+
+					        	//Y.on 是module-a 添加的，还是module-b添加的？
+					        	//如果都往Y上添加 on 方法，会出现什么问题？
+					        	Y.on();
+
+					        	//io-base 在Y上添加了 io 方法。
+					        	//是怎么知道的呢？查文档？为什么不是“Y.IO” ？
+					        	var request = Y.io();
+					        
+					        });
+
+					        ```
+
+					        <aside class="notes">
+					        把命名空间发挥到极致的内库框架莫过于YUI了。
+					        YUI命名空间很规范，组织得很漂亮的。
+					        但是：
+					        因为存在这样的问题，所以在YUI-->YUI3.0的时候，
+					        做了一个新的模块机制。
+					        在YUI3中，如何定义一个模块？看代码
+					        如何引用？easy。看代码
+					        定义时可以声明版本号，依赖关系～
+					        在use时，不需要关心依赖，会自动加载进来。
+					        YUI3解决了依赖问题～，也降低了记忆成本。所有内容都挂载在Y变量上。
+					        在09年，这种做法是 革新性质 的。非常牛逼的～
+					        但是在后来的使用过程中，大家慢慢发现，仍然带来一些问题。
+					        比如：
+					        	看代码～
+				        	总结：方式非常不错。依旧存在一些问题。可以完善
+
+			        		同时，在09-10年之间，一个规范定义组织commonjs诞生。
+					        </aside>
+					    </script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+						## Modules/1.x (CommonJS )
+						
+							Sample Module: increment.js
+
+						```
+						var add = require('math').add;
+						exports.increment = function(val){
+							return add(val,1);
+						}
+						```
+						_http://wiki.commonjs.org/wiki/Modules/1.1.1_
+
+						<aside class="notes">
+							CommonJS规范为JavaScript制定了一个美好的愿景——希望JavaScript能够在任何地方运行。
+							回答了刚开始的两个问题：模块是什么，依赖问题。
+							一个文件就是一个模块，通过require去引入其他模块。
+							require('math');
+							通过exports向外提供模块。
+							方式很优雅简洁，只需知道几个关键字，就把依赖关系，模块定义都搞定了，方便
+							出现的时机：在服务端，可以把一个文件读取出来，通过动态解析path去加载，在浏览器端会受到很多限制，eg：xhr，ajax拿到文件内容，再解析，问题：可能会跨域，诡异的坑。
+							总结：对于服务端很nice，但对于浏览器端不是很好
+
+							这个时候，关注模块loader。大家都知道的是AMD规范出现了。
+						</aside>
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+						## AMD (Asynchronous Module Definition)
+
+						```
+						define(["math"],function(math){
+							return {
+								increment:function(val){
+									return math.add(val,1);
+								}
+							}
+						});
+						```
+						_https://github.com/amdjs/amdjs-api/wiki/AMD_
+
+						<aside class="notes">
+						amd认为：
+						modules1.x这个规范对浏览器是不友好的。我们应该重新定义一个规范，要对浏览器友好，so：提出了一个新的规范，异步模块定义规范amd
+						通过define，一个数组声明它的依赖关系，一个回调，在回调中可以拿到依赖返回的接口～。
+
+						优雅，但是，按照它的要求，模块在define的时候就要执行，同时兼容前面的方式。支持很多灵活的写法，也带来了一些问题。
+						09-10年出来的时候，在commonjs社区引起了很大的争议。
+
+						两大派：
+						1.力挺 2.不支持
+						</aside>
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+						## Modules/2.0 (CommonJS )
+
+							Sample Module: increment.js
+
+						```
+						module.declare(['math'], function(require,exports,module){
+							var add = require('math').add;
+							exports.increment = function(val){
+								return add(val,1);
+							};
+						});
+
+						```
+						_http://www.page.ca/~wes/CommonJS/modules-2.0-7/_
+
+						<aside class="notes">
+
+						commonjs社区一些人又做了一个modules2.0规范。和amd没有很大区别。
+						核心区别是：回调里面，不再是依赖模块的接口，而是三个确定的参数：require,exports,module。
+						模块里面的写法和1.0的写法是一模一样的。就是外面加了一个module.declare（模块声明）
+
+						一直处于草案阶段。
+
+						这个时间commonjs和amd产生了分歧，所以amd是从commonjs社区分离出来了，一个独立的社区在发展。
+						amd源自commonjs，后来不属于commonjs。
+
+						commonjs自己的规范一值没有一个很好的实现，2.0也没有确定。
+
+						</aside>
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							 ## CMD (Common Module Definition)
+
+							 	Sample Module: increment.js
+
+							 ```
+							 	define(function(require,exports,module){
+
+							 		//通过 require 引入依赖
+							 		var $ = require('jquery');
+							 		var _ = require('underscore');
+
+							 		//通过 exports 对外提供接口
+							 		exports.doSomething = xxx;
+
+							 		//或者通过 module.exports 提供整个接口
+							 		module.exports = xxx;
+
+							 	});
+
+							 ```
+							 <aside class="notes">
+								后来又有一个cmd规范，common，进一步精简，核心想法：模块定义更纯粹，更自然。
+								所有模块通过define来定义。一个define就定义了一个模块。
+								define代码段可以存在文件中，也可以放在其他地方，比如数据库，内嵌。
+								回调中，和modules2.x保持一致，require,exports,module。
+								里面通过代码中的方式去写，就像写nodejs。不细说了～
+							</aside>
+						</script>
+						
+					</section>
+					
+
+					<section data-markdown>
+						<script type="text/template">
+						 ## 前端模块系统
+
+						 - 模块是一段JavaScript代码，具有统一的书写格式。
+						 - 模块之间通过基本交互规则，能彼此引用、协同工作。
+						 
+						 ![](../img/3.png)
+						 <!-- .element: class="fragment fade-in" data-fragment-index="1" -->
+						 <h3 class="tc fragment fade-in" data-fragment-index="2">模块定义规范<h3>
+
+						 Module Definition Specification
+						 <!-- .element: class="tc fragment fade-in" data-fragment-index="3" -->
+
+						 <aside class="notes">
+							前面看了 命名空间，YUI，各种规范。晕～
+							但是它们核心解决的问题就是最前面我们提出的两个问题：1,2
+							核心就是模块定义规范（操作ppt）
+
+							只要把这个规范定义出现了，模块系统的问题就解决了～
+						 </aside>
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							 ## 分支演化
+
+							 | 规范 | 服务端 | 浏览器端 |
+							 |------|--------|----------|
+							 | Modules/1.x | Node.js | component |
+							 | Modules/Async | r.js | RequireJS |
+							 | Modules/Wrappings | Sea.js | Sea.js |
+
+							 ![](../img/4.png)
+
+							 <aside class="notes">
+								目前，除了命名空间，跟YUI，包括dojo或其他的体之外
+								表格：commonjs这个分支下的主流模块规范
+								－－－
+								modules1x:服务器端nodejs算最好的一个实现。基本遵循1.0，还有一些自己的实现。浏览器端通过component工具去开发。
+								－－－
+								异步的主流：amd。服务端：r.js。通过r.js在服务端跑amd模块。
+								浏览器端：requirejs
+								－－－
+								cmd：modules2.0类似的规范。服务端和浏览器端都可以通过seajs去运行。
+
+							</aside>
+						</script>
+					</section>
+					
+					<section>
+						<img src="../img/15.png" alt="">
+						 <p>每个模块都有自己的沙箱</p>
+						 <aside class="notes">
+						 </aside>
+					</section>
+
+					<section>
+						<img src="../img/14.png" alt="">
+						 <aside class="notes">
+						 </aside>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							 ## 如何选择模块化方案
+
+							 - 团队成员的协作方式 
+							 <!-- .element: class="fragment fade-in" data-fragment-index="1" -->
+							 - 产品的复杂度
+							 <!-- .element: class="fragment" data-fragment-index="2" -->
+							 - 工具、CDN 等基础建设
+							 <!-- .element: class="fragment" data-fragment-index="3" -->
+
+							 <aside class="notes">
+							 这些规范本身没有优劣之分，要选择的话，是跟公司的团队相关的～
+							 比如：团队之间的协作方式相关，1个人负责一个产品。整体的可控是很强的，用哪个都ok～
+							 团队大，分工协作，模块之间互相依赖，通过component不是很合适～
+							 跟产品的复杂度相关～依赖关系，是由一个团队负责，或者多个团队一起来协同负责，包括，团队成员使用wins，mac，习惯cli操作还是GUI操作。习惯不一样，有相关
+							 </aside>
+						</script>
+					</section>
+
+				</section>
+
+
+				<section data-background-transition="zoom">
+					<section data-background="../img/5.jpg">
+						<h2 class="bottom black">二、关于Seajs</h2>
+					</section>
+					
+					<section data-markdown>
+						<script type="text/template">
+							## Sea.js 是什么
+
+							![](../img/6.png)
+
+							_http://seajs.org_
+
+							<aside class="notes">
+							 使用调查？
+							 
+						 	</aside>
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## CMD 规范
+
+							```
+							// 通过 define 定义一个模块
+							define(function(require,exports,module){
+								// 通过 require 引入模块
+								var $ = require('jquery');
+
+								// 通过 exports 向外提供接口
+								exports.doSomething = function(){
+									//xxx
+								};
+
+							});
+
+							```
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 模块的加载
+
+							```
+							// 通过 use 方法加载初始化模块
+							seajs.use(['a','b'],function(a,b){
+								// 模块的依赖会自动加载好
+								// 理论上不再需要全局变量
+							});
+
+							```
+
+						</script>
+					</section>
+
+
+					<section data-markdown id="transitions">
+						<script type="text/template">
+							## Sea.js 的优点
+
+							 [简单](/#/3/5) - 
+							 [清晰](/#/3/6) - 
+							 [性能](/#/3/7) - 
+							 [完备](/#/3/8)
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 简单
+
+							- API 简单
+							- 内部实现也简单
+
+							_https://github.com/seajs/seajs/issues/266_
+
+							_https://github.com/seajs/seajs/tree/master/src_
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 职责清晰
+
+							- Web 端的模块加载器
+							- SoC(关注度分离)
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 性能不差
+
+							- 模块数量与依赖往往比想象复杂
+							- Transport 规范与构建工具
+
+							_https://github.com/seajs/seajs/tree/master/tests/speed_
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 功能完备
+
+							- 考虑开发时的便利性
+							- 可扩展机制
+							- 不断完善的测试用例
+
+							_https://github.com/seajs/seajs/tree/master/tests_
+
+							_https://travis-ci.org/seajs/seajs_
+
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## Sea.js现状
+
+							<ol id="company-logos">
+						        <li><a href="http://pengyou.com/" target="_blank"><img alt="朋友" data-src="https://i.alipayobjects.com/e/201211/1d8Vxe4cE0.png" width="126" height="44" src="https://i.alipayobjects.com/e/201211/1d8Vxe4cE0.png"></a></li>
+						        <li><a href="http://t.qq.com/" target="_blank"><img alt="腾讯微博" data-src="https://i.alipayobjects.com/e/201304/2WGUrZpCxo.png" width="176" height="44" src="https://i.alipayobjects.com/e/201304/2WGUrZpCxo.png"></a></li>
+						        <li><a href="http://baixing.com/" target="_blank"><img alt="百姓网" data-src="https://i.alipayobjects.com/e/201211/1d8VoTO7wy.png" width="104" height="44" src="https://i.alipayobjects.com/e/201211/1d8VoTO7wy.png"></a></li>
+						        <li><a href="https://www.alipay.com/" target="_blank"><img alt="支付宝" data-src="https://i.alipayobjects.com/e/201211/1d8VoSqji8.png" width="103" height="44" src="https://i.alipayobjects.com/e/201211/1d8VoSqji8.png"></a></li>
+						        <li><a href="http://t.163.com/" target="_blank"><img alt="网易微博" data-src="https://i.alipayobjects.com/e/201211/1d8W0ck3D2.png" width="122" height="44" src="https://i.alipayobjects.com/e/201211/1d8W0ck3D2.png"></a></li>
+						        <li><a href="http://note.youdao.com/" target="_blank"><img alt="网易云笔记" data-src="https://i.alipayobjects.com/e/201304/2WXQdtXjO0.png" width="164" height="44" src="https://i.alipayobjects.com/e/201304/2WXQdtXjO0.png"></a></li>
+						        <li><a href="http://iqiyi.com/" target="_blank"><img alt="爱奇艺" data-src="https://i.alipayobjects.com/e/201304/2WXQrajDrA.png" width="117" height="44" src="https://i.alipayobjects.com/e/201304/2WXQrajDrA.png"></a></li>
+						        <li><a href="http://alibaba.com/" target="_blank"><img alt="Alibaba" data-src="http://ww3.sinaimg.cn/large/68361562gw1e1omdjti3vj.jpg" width="195" height="44" src="http://ww3.sinaimg.cn/large/68361562gw1e1omdjti3vj.jpg"></a></li>
+						        <li><a href="http://aliexpress.com/" target="_blank"><img alt="速卖通" data-src="https://i.alipayobjects.com/e/201307/jVXHYBMBB.png" width="180" height="44" src="https://i.alipayobjects.com/e/201307/jVXHYBMBB.png"></a></li>
+						        <li><a href="http://etao.com/" target="_blank"><img alt="一淘" data-src="https://i.alipayobjects.com/e/201211/1d8adaeedI.png" width="64" height="44" src="https://i.alipayobjects.com/e/201211/1d8adaeedI.png"></a></li>
+						        <li><a href="http://taobao.com/" target="_blank"><img alt="淘宝网" data-src="https://i.alipayobjects.com/e/201211/1d8W149hCW.png" width="164" height="44" src="https://i.alipayobjects.com/e/201211/1d8W149hCW.png"></a></li>
+						        <li><a href="http://laiwang.com/" target="_blank"><img alt="来往" data-src="https://i.alipayobjects.com/e/201211/1d8b0fwSDc.png" width="46" height="44" src="https://i.alipayobjects.com/e/201211/1d8b0fwSDc.png"></a></li>
+						        <li><a href="http://mbaobao.com/" target="_blank"><img alt="麦包包" data-src="https://i.alipayobjects.com/e/201211/1d8Vwo1a0C.png" width="103" height="44" src="https://i.alipayobjects.com/e/201211/1d8Vwo1a0C.png"></a></li>
+						        <li><a href="http://faxianla.com/" target="_blank"><img alt="发现啦" data-src="https://i.alipayobjects.com/e/201211/1d8VtmoYj6.png" width="133" height="44" src="https://i.alipayobjects.com/e/201211/1d8VtmoYj6.png"></a></li>
+						        <li><a href="http://howzhi.com/" target="_blank"><img alt="好知" data-src="https://i.alipayobjects.com/e/201211/1d8VtHAMdg.png" width="84" height="44" src="https://i.alipayobjects.com/e/201211/1d8VtHAMdg.png"></a></li>
+						        <li><a href="http://clicki.cn/" target="_blank"><img alt="Clicki" data-src="https://i.alipayobjects.com/e/201211/1d8VoUZUrE.png" width="106" height="44" src="https://i.alipayobjects.com/e/201211/1d8VoUZUrE.png"></a></li>
+						        <li><a href="http://xueqiu.com/" target="_blank"><img alt="雪球" data-src="https://i.alipayobjects.com/e/201211/1d8W2Vc9XA.png" width="88" height="44" src="https://i.alipayobjects.com/e/201211/1d8W2Vc9XA.png"></a></li>
+						        <li><a href="http://edoctor.cn/" target="_blank"><img alt="医道网" data-src="https://i.alipayobjects.com/e/201211/1d8VoUb70u.png" width="131" height="44" src="https://i.alipayobjects.com/e/201211/1d8VoUb70u.png"></a></li>
+						        <li><a href="http://dnspod.cn/" target="_blank"><img alt="DNSPOD" data-src="https://i.alipayobjects.com/e/201211/1d8VoTupmm.png" width="138" height="44" src="https://i.alipayobjects.com/e/201211/1d8VoTupmm.png"></a></li>
+						        <li><a href="http://www.srxing.com/" target="_blank"><img alt="三人行网络教育" data-src="https://i.alipayobjects.com/e/201211/1d8bt222OC.png" width="140" height="44" src="https://i.alipayobjects.com/e/201211/1d8bt222OC.png"></a></li>
+						        
+						        <li><a href="http://www.pptv.com/" target="_blank"><img alt="PPTV" data-src="http://static9.pplive.cn/logo/pptv.jpg" width="103" height="44" src="http://static9.pplive.cn/logo/pptv.jpg"></a></li>
+						        <li><a href="http://sodao.com/" target="_blank"><img alt="搜道网" data-src="https://i.alipayobjects.com/e/201211/1d8Vy06hw4.png" width="171" height="44" src="https://i.alipayobjects.com/e/201211/1d8Vy06hw4.png"></a></li>
+						        <li><a href="http://www.uco.com/" target="_blank"><img alt="悠可网" data-src="https://f.cloud.github.com/assets/1171291/33472/8990cde6-5093-11e2-8344-6f9e4acdf3fc.png" width="86" height="44" src="https://f.cloud.github.com/assets/1171291/33472/8990cde6-5093-11e2-8344-6f9e4acdf3fc.png"></a></li>
+						        <li><a href="http://www.chufa.la/" target="_blank"><img alt="出发啦" data-src="http://cflimage.b0.upaiyun.com/image/partner/forseajs.png" width="187" height="44" src="http://cflimage.b0.upaiyun.com/image/partner/forseajs.png"></a></li>
+						        <li><a href="http://lovelyresearcher.com/" target="_blank"><img alt="乐研生物" data-src="https://f.cloud.github.com/assets/600263/126394/9e0e6fba-6f58-11e2-9d2c-83d5bb87f2b9.png" width="134" height="44" src="https://f.cloud.github.com/assets/600263/126394/9e0e6fba-6f58-11e2-9d2c-83d5bb87f2b9.png"></a></li>
+						        <li><a href="http://m.xunlei.com/xunlei.html" target="_blank"><img alt="手机迅雷" data-src="https://f.cloud.github.com/assets/1555529/356903/a591bef2-a119-11e2-9451-58533cb79115.png" width="44" height="44" src="https://f.cloud.github.com/assets/1555529/356903/a591bef2-a119-11e2-9451-58533cb79115.png"></a></li>
+					      	</ol>
+
+					      	开源 Sea.js 3.0.0
+						</script>
+					</section>
+
+				</section>
+
+				<section>
+					<section data-background="../img/7.jpg">
+						<h2 class="bottom twhite">三、CRM的实践</h2>
+					</section>
+
+					<section>
+						<h2>愿景</h2>
+						<p>1.前后分离模块化</p>
+						<p>2.简单、高效并行</p>
+						<p>3.稳定、高可用。</p>
+					</section>
+
+					<section>
+						<h2>对技术的要求</h2>
+
+						<div class="yqbox">
+							<img src="../img/8.png" alt="" class="yaoqiu">
+							<span class="gky">高可用</span>
+							<span class="sd">研发速度</span>
+							<span class="zl">质量\性能\创新</span>
+						</div>
+						
+						<aside class="notes">
+							This slide has fragments which are also stepped through in the notes window.
+						</aside>
+
+					</section>
+
+					<section>
+						<h2>前端的职责</h2>
+
+						<p>1  实现界面交互</p>
+						<p>2  提升用户体验</p>
+						
+						<aside class="notes">
+							核心的职责
+						</aside>
+
+					</section>
+
+					<section>
+						<h2>前端业务分类</h2>
+
+						<img src="../img/9.png" alt="">
+						
+						<aside class="notes">
+							分析业务。
+						</aside>
+
+					</section>
+
+					<section>
+
+						<img src="../img/10.png" alt="">
+						
+						<aside class="notes">
+							两个业务都存在，要考虑如何对两种业务都支持。
+							我觉得咱们前端应该会是一个这样的架构
+						</aside>
+
+					</section>
+
+					<section>
+
+						<h2>前端技术平台</h2>
+						<img src="../img/11.png" alt="">
+						<aside class="notes">
+							前端技术平台的概念，在产品的下层统一提供一个前端技术平台，
+							这个核心就是提供前端一个基础平台。
+							公司团队规模稍微大一点，都会做的事情。
+							包括，组件，类库，框架，这是一个层面，
+							第二个层面，有很多工具，（构建，开发，发布，测试，etc）
+							最下面的话，很重要的一块，规范流程～
+							刚刚说的模块的规范～。
+							右侧，研发体系。通用的一些东西。
+							你要管理需求
+							你要。。。
+							整体支撑产品线～
+						</aside>
+
+					</section>
+
+					<section>
+					
+						<h2>CRM做了什么</h2>
+						<p>seajs与freemarker的最佳实践</p>
+
+					</section>
+
+					<section>
+					
+						<h2>freemarker</h2>
+						<blockquote cite="http://baike.baidu.com/link?url=4vsk4rMzdD1zxMEGE5yWRWCE1dzKSWZeHEQ-itdE5lrOIm25g3QpIunPhPpt3RaQs4PPdjJCcEeVL4L0ViGkAq">
+							&ldquo;一个用Java语言编写的模板引擎,它基于模板来生成文本输出。&rdquo;
+						</blockquote>
+
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+						## 为什么使用？ 
+						
+						- 非单页应用
+						- 页面内容多而杂
+						- 考虑性能
+
+						</script>
+					</section>
+
+					<section>
+					
+						<h2>全局配置</h2>
+						<p>配置基础变量（baseUrl，debug，cdnUrl, etc）</p>
+						<p>宏模版（header，footer，etc）</p>
+
+						<p>区分线上线下环境</p>
+
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							> global.ftl
+
+							```
+							<#-- DEBUG 是否开启工程调试模式 -->
+							<#global DEBUG = false>
+
+							<#if DEBUG?? && DEBUG>
+							    <#--cdn cdn加速缓存服务器地址-->
+							    <#assign cdn = 'http://127.0.0.1:2500'>
+							    <#assign crm_cdn = '${cdn}/crm/pc_src'>
+							    <#--moduleRoot 业务模块文件所在目录（相对于seajs模块根目录）-->
+							    <#global moduleRoot = 'modules_src'>
+							    <#-- 通用模块文件所在目录 -->
+							    <#global galleryRoot = 'gallery_src'>
+							<#else>
+							    <#-- 远程:192.168.17.82 -->
+							    <#assign cdn = 'http://127.0.0.1:5000'>
+							    <#assign crm_cdn = '${cdn}/crm/pc'>
+							    <#global moduleRoot = 'modules'>
+							    <#-- 通用模块文件所在目录 -->
+							    <#global galleryRoot = 'gallery'>
+							</#if>
+
+							<#--ctx 工程对外访问路径-->
+							<#assign ctx = ''>
+							<#--jsRoot js文件所在路径-->
+							<#global jsRoot = '${crm_cdn}/js'>
+							<#global comRoot = '${cdn}/common'>
+							<#--seajsRoot seajs模块根路径-->
+							<#global seajsRoot = '${jsRoot}'>
+							<#--cssRoot css文件所在路径-->
+							<#global cssRoot = '${crm_cdn}/css'>
+							<#--imgRoot img文件所在路径-->
+							<#global imgRoot = '${crm_cdn}/img'>
+							<#global pluginRoot = '${cssRoot}/plugin'>
+							```
+						</script>
+					</section>
+					
+					<section data-markdown>
+						<script type="text/template">
+						## 将部分配置暴露到js全局
+
+						```
+						GLOBAL = {
+							CTX: '${ctx}',
+							CDN: '${crm_cdn}',
+							JS: '${jsRoot}',
+							SEA:  '${seajsRoot}',
+							MODULES: '${moduleRoot}',
+							GALLERY: '${galleryRoot}',
+							PLUGIN:'${pluginRoot}',
+							TIMESTAMP: new Date().getTime()
+						};
+						```
+						各页面轻松使用
+
+						</script>
+					</section>
+
+					<section>
+					
+						<h2>以页面来划分模块</h2>
+						<p>一个页面就是一个单独的模块</p>
+						<p>在页面中存在一个主模块入口</p>
+						
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+						## 定义一个宏
+
+						```
+
+						<#macro script model version name>
+							<script>
+							var OP_CONFIG={
+								"module":"${model?default('common')}",
+								"version":"${version?default('0.0.1')}",
+								"name":"${name?default('index')}"
+							};
+							<#if DEBUG?? && DEBUG>
+							seajs.use([GLOBAL.MODULES,OP_CONFIG.module,OP_CONFIG.name].join("/"));
+							//seajs.use('jquery/jquery/index');
+							<#else>
+							seajs.use([GLOBAL.MODULES,OP_CONFIG.module,OP_CONFIG.version,OP_CONFIG.name].join("/"));
+							//seajs.use('jquery/jquery/1.7.2/index');
+							</#if>
+							< /script>
+						</#macro>
+
+
+						```
+						各页面轻松使用
+						
+						</script>
+					</section>
+
+
+					<section data-markdown>
+						<script type="text/template">
+							```
+								// 每一个页面都存在一个，有且只有一个
+								// 页面中的所有业务都在此模块中聚合
+								seajs.use('/path/to/page1');
+
+							```
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 模块的编写
+							- 结构统一
+							- 测试用例完备
+							- 文档健全
+						</script>
+					</section>
+					
+					<section data-markdown>
+						<script type="text/template">
+							```
+							|-module-a	-- 模块根目录
+								|-examples    -- 示例
+								|-src 		-- 源码
+								|-tests       -- 测试集
+							```
+
+							通过这种结构，编写组织各种seajs模块～
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							![](../img/13.jpg)
+
+							苦逼写码中...
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 这样就完成了？
+							### no
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 问题
+							- 开发体验不够
+							- 自动加载依赖，导致HTTP请求数暴增
+							- 不能简单地合并文件内容(违背异步加载)
+							- 代码未保护
+							- 没有版本提升
+						</script>
+					</section>
+
+
+					<section data-markdown data-transition="slide" data-background-transition="zoom">
+						<script type="text/template">
+							## Quickjs
+							build tool for cmd
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## Quickjs
+
+							- Install:
+							```
+							npm install quickjs -g
+							```
+
+							- commander
+								- init (initialize a module)
+								- serve (start a small static resource server)
+								- build (build module)
+						</script>
+					</section>
+
+					<section data-markdown data-background="rgb(117, 144, 101)">
+						<script type="text/template">
+							init ［初始化一个模块］
+
+								- 通过CLI问答式确定模块信息，并生成约定的模块目录结构
+
+							```
+							➜  module-a git:(master) ✗ quick init
+							Creating a package:
+							? Package name: module-a
+							? Version: 0.0.1
+							? Description: 测试模块
+							? Author: cjxsgn <cjxsgn@163.com>
+
+							Initialize a package Succeccfully!
+
+							➜  module-a git:(master) ✗
+							```
+
+							简化开发时间，关注核心业务
+						</script>
+					</section>
+
+					<section data-markdown data-background="rgb(77, 126, 101)">
+						<script type="text/template">
+							serve ［启动一个本地静态资源调试服务器。］
+
+								- 支持combo服务，支持自动包装cmd模块
+
+								- 支持模版自动包装成cmd模块
+
+								- 支持更多自定义配置
+
+							```
+							➜  module-a git:(master) ✗ quick serve
+								用户设定监听路径为：
+								/Users/Ajian/Public/working/project/git/ppt/test/tmp/module-a
+								file server started，listening on port 5000
+							```
+
+							```
+							➜  ~  quick serve -h
+
+							  Usage: serve <names> [options]
+
+							  Options:
+
+							    -h, --help         output usage information
+							    -r, --root <path>  set serve root
+							    -p, --port <n>     Set the listening port
+							```
+
+							模拟线上环境，降低调试成本
+						</script>
+					</section>
+
+					<section data-markdown data-background="rgb(181, 83, 60)">
+						<script type="text/template">
+							build ［构建模块］
+
+								- 自动包装，解析依赖，压缩混淆。
+
+								- 支持单个或批量构建
+
+							```
+							➜  test git:(master) ✗ quick build -r ../ -i ../tmp -t ../temp -o ../dist -q all -p temp
+								# 基础目录：/Users/Ajian/Public/working/project/git/ppt/test
+								# 构建目录：/Users/Ajian/Public/working/project/git/ppt/test/tmp
+								# 临时目录：/Users/Ajian/Public/working/project/git/ppt/test/temp
+								# 待构建队列：module-a
+								> 创建了临时目录。
+								> 待构建文件已拷贝到临时文件夹中。
+								# Gruntfile:/Users/Ajian/Public/working/project/git/ppt/test/temp/Gruntfile.js
+								-------------任务开始-----------
+								[conf src]: [ 'src/**/*.js', 'src/**/*.tpl', 'index.js' ]
+								[conf dest]: /Users/Ajian/Public/working/project/git/ppt/test/dist
+								Running "build:main" (build) task
+								File "/Users/Ajian/Public/working/project/git/ppt/test/dist/temp/module-a/0.0.1/index.js" created.
+
+								Done, without errors.
+								# 当前已完成：module-a
+								# 临时目录已删除！
+								# 任务全部完成！
+								-------------任务结束-----------
+								➜  test git:(master) ✗
+							```
+
+							```
+							quick build -h
+							```
+							优化代码，提升开发体验
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 模块的编译 ？
+							- 自动包装
+							- 自动解析依赖路径
+							- 自动压缩优化
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+						## marketing-static
+						```
+						marketing       <-- crm静态资源
+						    ├─common
+						    |	└─seajs
+						    |	|	└─seajs-combo
+						    |	|	├─seajs-debug
+						    |	|	├─seajs-log
+						    |	|	└─seajs-text
+						    |	└─sea.js
+						    ├─mobile            <-- mobile
+						    └─pc                <-- dist
+						    |  └─css
+						    |  ├─img
+						    |  └─js
+						    |	└─gallery
+						    |	|	└─dialog
+						    |	|		└─0.0.1
+						    |	|			└─src
+							|	|			└─index.js
+							|	└─modules
+							|		└─login
+						    |			└─0.0.1
+						    |				└─src
+							|				└─login.js
+							|
+						    └─pc_src            <-- source
+						    |  └─css
+						    |  ├─img
+						    |  └─js
+						    |	└─gallery
+						    |	|	└─dialog
+						    |	|		└─examples
+						    |	|		├─src
+						    |	|		├─tests
+						    |	|		└─index.js
+						    |	└─modules
+						    |	    └─login
+						    |	 		├─src
+						    |	 		├─tests
+						    |	 		└─index.js
+						    └─c.js              <-- seajs-config
+						    ├─Gruntfile.js      <-- gruntfile
+						    ├─package.json
+						    └─qconf.js          <--quickjs静态资源模拟服务的配置
+						```
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## combo
+							- [seajs-combo](https://github.com/seajs/seajs-combo)
+							- [nginx-http-concat](https://github.com/alibaba/nginx-http-concat)
+							
+
+							```
+							http://static.qipeipu.com/crm/crm/pc/css/??base/reset.css,base/table.css,base/base.css,plugin/layer/skin/layer.css,plugin/layer/skin/ext.css,login.css
+
+							http://static.qipeipu.com/crm??common/sea.js,common/seajs/seajs-combo/1.0.1/seajs-combo.js,crm/c.min.js
+
+							http://static.qipeipu.com/crm/crm/pc/js/??modules/crm-jquery/0.0.1/index.js,modules/core/0.0.1/index.js,gallery/layer/1.9.3/index.js
+
+							```
+
+							[首页速度检测](chrome-extension://pkgccpejnmalmdinmhkkfafefagiiiad/template/fehelper_wpo.html?{%22header%22:{%22date%22:%22Mon,%2024%20Aug%202015%2006:22:50%20GMT%22,%22connection%22:%22keep-alive%22,%22contentEncoding%22:%22gzip%22,%22contentLength%22:%224577%22,%22server%22:%22nginx/1.6.0%22,%22vary%22:null,%22transferEncoding%22:null,%22contentType%22:%22text/html;charset=UTF-8%22,%22cacheControl%22:null,%22exprires%22:null,%22lastModified%22:null},%22pageInfo%22:{%22title%22:%22%E6%B1%BD%E9%85%8D%E9%93%BACRM-%E9%A6%96%E9%A1%B5%22,%22url%22:%22http://crm.qipeipu.com/index%22},%22time%22:{%22navigationStart%22:1440397366337,%22unloadEventStart%22:1440397366388,%22unloadEventEnd%22:1440397366389,%22redirectStart%22:0,%22redirectEnd%22:0,%22fetchStart%22:1440397366337,%22domainLookupStart%22:1440397366337,%22domainLookupEnd%22:1440397366337,%22connectStart%22:1440397366337,%22connectEnd%22:1440397366337,%22secureConnectionStart%22:0,%22requestStart%22:1440397366339,%22responseStart%22:1440397366385,%22responseEnd%22:1440397366388,%22domLoading%22:1440397366400,%22domInteractive%22:1440397366613,%22domContentLoadedEventStart%22:1440397366613,%22domContentLoadedEventEnd%22:1440397366616,%22domComplete%22:1440397366724,%22loadEventStart%22:1440397366724,%22loadEventEnd%22:1440397366728}})
+
+						</script>
+					</section>
+
+					<section>
+						<a href="../img/12.png">
+							<img src="../img/12.png" alt="">
+						</a>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							## 解决了
+							- 代码依赖混杂问题
+							- 模块依赖导致http请求过多的问题
+							- tpl加载问题
+							- 构建问题（模块id）
+							- ...
+						</script>
+					</section>
+				
+					<section data-markdown>
+						<script type="text/template">
+							## TODO
+							- 通用组件的积累，仓库的搭建
+							- 前端资源上线流程自动化
+							- 一系列工具（构建，测试，错误监控，etc）
+							- ...
+						</script>
+					</section>
+
+					<section data-markdown style="text-align: left;">
+						<script type="text/template">
+							# THE END，Thx  } );
+							```
+							console.log("Q&A");
+							```
+						</script>
+					</section>
+				</section>
+
+				<section id="themes">
+					<h2>Themes</h2>
+					<pre><code></code></pre>
+					<p>
+						<!-- Hacks to swap themes after the page has loaded. Not flexible and only intended for the reveal.js demo deck. -->
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/black.css'); return false;">Black (default)</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/white.css'); return false;">White</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/league.css'); return false;">League</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/sky.css'); return false;">Sky</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/beige.css'); return false;">Beige</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/simple.css'); return false;">Simple</a> <br>
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/serif.css'); return false;">Serif</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/blood.css'); return false;">Blood</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/night.css'); return false;">Night</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/moon.css'); return false;">Moon</a> -
+						<a href="#" onclick="document.getElementById('theme').setAttribute('href','../css/theme/solarized.css'); return false;">Solarized</a>
+					</p>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="../lib/js/head.min.js"></script>
+		<script src="../js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: false,
+				history: true,
+				center: true,
+				previewLinks:true,
+				transition: 'convex', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: '../plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../plugin/zoom-js/zoom.js', async: true },
+					{ src: '../plugin/notes/notes.js', async: true }
+				]
+			});
+
+
+		</script>
+
+	</body>
+</html>
